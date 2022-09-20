@@ -9,5 +9,6 @@ module newcommon
   character(len=20) :: solvent
 
   logical  :: Verbose
+  logical  :: spin_pol 
 
 end module newcommon

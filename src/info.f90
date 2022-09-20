@@ -134,6 +134,7 @@ module qcxms_info
   else
     write(*,'('' Dispersion            : '',a2)') 'D3'
   endif
+  if ( spin_pol ) write(*,*) 'Spin Polarization switched ON'
 
   ! optional printout on disperion parameters
   if ( verbose ) then

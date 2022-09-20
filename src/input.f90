@@ -409,6 +409,10 @@ subroutine input(tstep,tmax,ntraj,etemp_in,Tinit, mchrg_prod,                  &
          if ( line == 'MO-ORCA')      XTBMO=.False.
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+         ! SPIN POLARIZATION
+         if ( line == 'SPIN' )        spin_pol = .True.
+
+         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          ! IP CALCULATIONS
          if ( line == 'IP-MOPAC')     iprog=1
          if ( line == 'IP-TMOL')      iprog=2

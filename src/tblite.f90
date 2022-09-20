@@ -2,9 +2,14 @@
 
 !> This module defines the bridge between QCxMS and the tblite library.
 module qcxms_tblite
+  use newcommon, only: spin_pol
    use mctc_env, only : error_type
    use mctc_io, only : structure_type, new
+   use tblite_basis_type, only : basis_type
    use tblite_context_type, only : context_type
+   use tblite_container, only : container_type
+   use tblite_data_spin, only : get_spin_constant
+   use tblite_spin, only : spin_polarization, new_spin_polarization
    use tblite_wavefunction_type, only : wavefunction_type, new_wavefunction
    use tblite_xtb_calculator, only : xtb_calculator
    use tblite_xtb_gfn2, only : new_gfn2_calculator
@@ -130,11 +135,30 @@ subroutine get_xtb_egrad(num, xyz, charge, multiplicity, method, etemp, &
    end select
 
    ! Create a new wavefunction for every calculation
-   call new_wavefunction(wfn, mol%nat, calc%bas%nsh, calc%bas%nao, 1, etemp * ktoau)
+   if (spin_pol) then
+    call new_wavefunction(wfn, mol%nat, calc%bas%nsh, calc%bas%nao, 2, etemp * ktoau)
+  else
+    call new_wavefunction(wfn, mol%nat, calc%bas%nsh, calc%bas%nao, 1, etemp * ktoau)
+  endif
+
+
+   !> call spin polarization 
+   if (spin_pol) then
+    block
+       class(container_type), allocatable :: cont
+       type(spin_polarization), allocatable :: spin
+       real(wp), allocatable :: wll(:, :, :)
+       allocate(spin)
+       call get_spin_constants(wll, mol, calc%bas)
+       call new_spin_polarization(spin, mol, wll, calc%bas%nsh_id)
+       call move_alloc(spin, cont)
+       call calc%push_back(cont)
+    end block
+  endif
+
 
    ! Perform the actual calculation
    call xtb_singlepoint(ctx, mol, calc, wfn, accuracy, energy, gradient, sigma, 1)
-
 
    ! Check the calculation context for errors
    if (ctx%failed()) then
@@ -173,5 +197,25 @@ subroutine get_xtb_egrad(num, xyz, charge, multiplicity, method, etemp, &
    close(ctx%unit)
 
 end subroutine get_xtb_egrad
+
+subroutine get_spin_constants(wll, mol, bas)
+   real(wp), allocatable, intent(out) :: wll(:, :, :)
+   type(structure_type), intent(in) :: mol
+   type(basis_type), intent(in) :: bas
+
+   integer :: izp, ish, jsh, il, jl
+
+   allocate(wll(bas%nsh, bas%nsh, mol%nid), source=0.0_wp)
+
+   do izp = 1, mol%nid
+      do ish = 1, bas%nsh_id(izp)
+         il = bas%cgto(ish, izp)%ang
+         do jsh = 1, bas%nsh_id(izp)
+            jl = bas%cgto(jsh, izp)%ang
+            wll(jsh, ish, izp) = get_spin_constant(jl, il, mol%num(izp))
+         end do
+      end do
+   end do
+end subroutine get_spin_constants
 
 end module qcxms_tblite

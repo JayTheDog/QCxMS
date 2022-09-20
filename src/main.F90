@@ -208,6 +208,8 @@ littlemass=.false.
 check=.false.
 ! more infos
 verbose = .false.
+! default not spin polarized
+spin_pol=.false.
 ! no production
 prod   =.false.
 ! no equilibration 
